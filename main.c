@@ -52,11 +52,9 @@ uint16_t mostres32 = 0;
 
 uint16_t DMA_option = 0;
 
-uint16_t Cabalimetre_mostra_0 = 0;
-uint16_t Sensor_temp_liquid_refrigerant_mostra_0 = 0;
-uint16_t Sensor_temp_aire_mostra_0 = 0;
-uint16_t Tensio_bateria_mostra_0 = 0;
 uint16_t entra = 0;
+uint16_t muestras1[300] = {};
+uint16_t int_m2m = 0;
 
 
 void configuracionDMAyADC(void){
@@ -264,6 +262,7 @@ void DMA2_Stream0_IRQHandler(void){
 
 
 		}else {
+			int_m2m = 1;
 			DMA_option = 0;
 
 			enableADCparameters();
@@ -743,8 +742,45 @@ void EsborraPantalla (uint8_t Rval, uint8_t Gval, uint8_t Bval ) {
 		}
 	}
 }
+uint16_t mapeoRango(long x, long in_min, long in_max, long out_min, long out_max) {
+	  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
+void pintaMuestras(uint16_t arr[300]) {
+	uint16_t i = 0;
+	uint16_t row_value = 0;
+	for (i=0;i<300;i++){
+		row_value=mapeoRango(muestras1[i], 0,  4095,  20,  220);
+		SetPixel(i,row_value, 255, 255, 0, 0);
+		arr[i] = row_value;
+	}
 
+}
+
+void initMuestras() {
+	uint16_t i = 0;
+	for(i = 0; i<300; i++) {
+		muestras1[i] = 0;
+
+	}
+}
+void mueveMuestras(){
+	uint16_t i  = 0;
+	for (i = 0; i < 300; i++){
+		if (i != 299) muestras1[i+1] = muestras1[i];
+		else break;
+
+	}
+}
+uint16_t mediaSensor(int i) {
+	uint8_t j =0;
+	uint32_t acum =0;
+	for (j = i; j<32; j=j+4) {
+		acum = FinalValue[j] + acum;
+
+	}
+	return (uint16_t) acum/8;
+}
 
 void iniciaLCD() {
 	LCD_Init();
@@ -765,6 +801,14 @@ void iniciaLCD() {
 
 }
 
+void limpaAnterior(uint16_t arr[300]) {
+	uint16_t i = 0;
+	for (i=0;i<300;i++){
+		SetPixel(i,arr[i], 255, 255, 255, 255);
+
+	}
+
+}
 void inicialitza_sistema(void){
 	init_clock();
 	//init_button();
@@ -784,8 +828,9 @@ void inicialitza_sistema(void){
 	//GPIO_SetBits(GPIOC, GPIO_Pin_13);
 
 	//entra = ADC_GetConversionValue(ADC3);
+	configuracionDMAyADC();
 	iniciaLCD();
-		//initMuestras();
+	initMuestras();
 
 	EsborraPantalla(255,255,255);
 
@@ -801,7 +846,7 @@ void inicialitza_sistema(void){
 	dibujaCuadrado(223, 150-40, 237, 150, 255,0,255);
 	dibujaCuadrado(223, 90-40, 237, 90, 0,255,255);
 
-	//configuracionDMAyADC();
+
 
 
 }
@@ -823,10 +868,18 @@ void espera_interrupcio(void){
 }
 
 int main(void) {
+	uint16_t aux_borrar [300] = {};
 	inicialitza_sistema();
     while(1) {
     	//calcula_temps_injeccio();
     	//espera_interrupcio();
+    	if(int_m2m == 1) {
+    		limpaAnterior(aux_borrar);
+			int_m2m = 0;
+			muestras1[0] = mediaSensor(0);
+			pintaMuestras(aux_borrar);
+			mueveMuestras();
+    	 }
     }
 }
 
