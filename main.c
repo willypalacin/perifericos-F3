@@ -53,7 +53,7 @@ uint16_t mostres32 = 0;
 uint16_t DMA_option = 0;
 
 uint16_t entra = 0;
-uint16_t muestras1[300] = {};
+uint16_t muestras1[300], muestras2[300], muestras3[300], muestras4[300] = {};
 uint16_t int_m2m = 0;
 
 
@@ -746,13 +746,22 @@ uint16_t mapeoRango(long x, long in_min, long in_max, long out_min, long out_max
 	  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-void pintaMuestras(uint16_t arr[300]) {
+void pintaMuestras(uint16_t arr[300], uint16_t arr2[300], uint16_t arr3[300], uint16_t arr4[300]) {
 	uint16_t i = 0;
 	uint16_t row_value = 0;
-	for (i=0;i<300;i++){
-		row_value=mapeoRango(muestras1[i], 0,  4095,  20,  220);
+	for (i=20;i<300;i++){
+		row_value=mapeoRango(muestras1[i], 0,  4095,  219,  21);
 		SetPixel(i,row_value, 255, 255, 0, 0);
 		arr[i] = row_value;
+		row_value=mapeoRango(muestras2[i], 0,  4095,  219,  21);
+		SetPixel(i,row_value, 255, 0, 255, 0);
+		arr2[i] = row_value;
+		row_value=mapeoRango(muestras3[i], 0,  4095,  219,  21);
+		SetPixel(i,row_value, 255, 255,0,255);
+		arr3[i] = row_value;
+		row_value=mapeoRango(muestras4[i], 0,  4095,  219,  21);
+		SetPixel(i,row_value, 255, 0,255,255);
+		arr4[i] = row_value;
 	}
 
 }
@@ -767,7 +776,12 @@ void initMuestras() {
 void mueveMuestras(){
 	uint16_t i  = 0;
 	for (i = 0; i < 300; i++){
-		if (i != 299) muestras1[i+1] = muestras1[i];
+		if (i != 299) {
+			muestras1[i+1] = muestras1[i];
+			muestras2[i+1] = muestras2[i];
+			muestras3[i+1] = muestras3[i];
+			muestras4[i+1] = muestras4[i];
+		}
 		else break;
 
 	}
@@ -801,15 +815,19 @@ void iniciaLCD() {
 
 }
 
-void limpaAnterior(uint16_t arr[300]) {
+void limpaAnterior(uint16_t arr[300], uint16_t arr2[300], uint16_t arr3[300], uint16_t arr4[300]) {
 	uint16_t i = 0;
 	for (i=0;i<300;i++){
 		SetPixel(i,arr[i], 255, 255, 255, 255);
+		SetPixel(i,arr2[i], 255, 255, 255, 255);
+		SetPixel(i,arr3[i], 255, 255, 255, 255);
+		SetPixel(i,arr4[i], 255, 255, 255, 255);
 
 	}
 
 }
 void inicialitza_sistema(void){
+
 	init_clock();
 	//init_button();
 	//inicia_Timer4();
@@ -867,19 +885,26 @@ void espera_interrupcio(void){
 	 }
 }
 
+
+
+
 int main(void) {
-	uint16_t aux_borrar [300] = {};
+	uint16_t aux_borrar_1 [300], aux_borrar_2[300], aux_borrar_3[300], aux_borrar_4[300] = {};
+
+
 	inicialitza_sistema();
     while(1) {
     	//calcula_temps_injeccio();
     	//espera_interrupcio();
     	if(int_m2m == 1) {
-    		limpaAnterior(aux_borrar);
-			int_m2m = 0;
+    		int_m2m = 0;
+    		limpaAnterior(aux_borrar_1, aux_borrar_2, aux_borrar_3, aux_borrar_4);
 			muestras1[0] = mediaSensor(0);
-			pintaMuestras(aux_borrar);
+			muestras2[0] = mediaSensor(1);
+			muestras3[0] = mediaSensor(2);
+			muestras4[0] = mediaSensor(3);
+			pintaMuestras(aux_borrar_1,aux_borrar_2, aux_borrar_3, aux_borrar_4 );
 			mueveMuestras();
     	 }
     }
 }
-
