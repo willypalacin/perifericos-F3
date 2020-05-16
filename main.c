@@ -1,4 +1,7 @@
 #include "stm32f4xx.h"
+#include "stm32f429i_discovery.h"
+#include "stm32f429i_discovery_lcd.h"
+#include "stm32f429i_discovery_sdram.h"
 
 //CONSTANTS
 #define TRUE 1
@@ -18,11 +21,12 @@
 
 
 
+
 //VARIABLES
 static uint16_t tics = 0;
 uint16_t btn_pressed = 0;
 uint16_t rev_min = 0;
-uint16_t array_cargar[16] = {479,239,159,119,95,79,67,59,52,47,42,39,35,33,31};
+uint16_t array_cargar[16] = {479/2,239/2,159/2,119*2,95*2,79,67,59,52,47,42,39,35,33,31};
 uint16_t flag_decrementa = 1;
 static uint16_t milis_rebots = 0;
 static uint16_t cont_10micros = 0;
@@ -270,12 +274,12 @@ void DMA2_Stream0_IRQHandler(void){
 }
 
 
-void EXTI1_IRQHandler(void) {
+void EXTI4_IRQHandler(void) {
 	//EXTI1_RSI =	TIM_GetCounter(TIM3);
 
-    if (EXTI_GetITStatus(EXTI_Line1) != RESET) {
+    if (EXTI_GetITStatus(EXTI_Line4) != RESET) {
     	// comprobamos flanco de bajada
-    	if(!GPIO_ReadInputDataBit(GPIOD, GPIO_Pin_1)) {
+    	if(!GPIO_ReadInputDataBit(GPIOD, GPIO_Pin_4)) {
     		//configuracionDMAyADC();
     		ADC_SoftwareStartConv(ADC3);
     		aux = 200;
@@ -287,12 +291,12 @@ void EXTI1_IRQHandler(void) {
     		cont_10micros = 0;
     	}
     	//limpiamos int
-    	EXTI_ClearITPendingBit(EXTI_Line1);
+    	EXTI_ClearITPendingBit(EXTI_Line4);
     }
    // EXTI1_RSI = TIM_GetCounter(TIM3) - EXTI1_RSI;
 }
 
-void ConfiguraPD1(void) {
+void ConfiguraPD4(void) {
     GPIO_InitTypeDef GPIO_InitStruct;
     EXTI_InitTypeDef EXTI_InitStruct;
     NVIC_InitTypeDef NVIC_InitStruct;
@@ -303,16 +307,16 @@ void ConfiguraPD1(void) {
     //Lectura Input
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_1;
+    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_4;
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
     GPIO_Init(GPIOD, &GPIO_InitStruct);
 
     //Utilizremos la EXIT_line para el PD1
-    SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOD, EXTI_PinSource1);
+    SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOD, EXTI_PinSource4);
 
     //PD1, esta conectado a EXIT1
-    EXTI_InitStruct.EXTI_Line = EXTI_Line1;
+    EXTI_InitStruct.EXTI_Line = EXTI_Line4;
     EXTI_InitStruct.EXTI_LineCmd = ENABLE;
 
     EXTI_InitStruct.EXTI_Mode = EXTI_Mode_Interrupt;
@@ -322,11 +326,11 @@ void ConfiguraPD1(void) {
     EXTI_Init(&EXTI_InitStruct);
 
     // PD1 = EXTI1_IRQn
-    NVIC_InitStruct.NVIC_IRQChannel = EXTI1_IRQn;
+    NVIC_InitStruct.NVIC_IRQChannel = EXTI4_IRQn;
     //No prioridad
-    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 0x02;
+    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 0x00;
     //No subprioridad
-    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0x02;
+    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0x00;
     NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStruct);
 }
@@ -408,8 +412,8 @@ void configuraTimer5(){
   NVIC_InitTypeDef NVIC_InitStructure;
   /* global interrupt */
   NVIC_InitStructure.NVIC_IRQChannel = TIM5_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 9;
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 9;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM5, ENABLE);
@@ -506,18 +510,18 @@ void TIM2_IRQHandler(void){
 
 void inicia_Timer3() {
 	NVIC_InitTypeDef NVIC_InitStructure;
-	//NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
+	NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-	///NVIC_EnableIRQ(TIM3_IRQn);
+	NVIC_EnableIRQ(TIM3_IRQn);
 	NVIC_Init(&NVIC_InitStructure);
 	TIM_TimeBaseInitTypeDef TIM_BaseStruct;
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE); //Activamos el clock para el timer3
-	TIM_BaseStruct.TIM_Prescaler = 1; //frec a 8M
+	TIM_BaseStruct.TIM_Prescaler = 10499; //frec a 8M
     TIM_BaseStruct.TIM_CounterMode = TIM_CounterMode_Up;
     /* Tenemos este array preconfigurado, de forma que aumentamos su valor, si se pulsa el pulsador */
-    TIM_BaseStruct.TIM_Period = 0xFFFFFFFF;
+    TIM_BaseStruct.TIM_Period = array_cargar[rev_min];
     TIM_BaseStruct.TIM_ClockDivision = 1;
     TIM_BaseStruct.TIM_RepetitionCounter = 0;
     TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE);
@@ -526,7 +530,29 @@ void inicia_Timer3() {
     TIM_Cmd(TIM3, ENABLE);
 }
 
+void TIM3_IRQHandler(void) {
+
+	if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET) {
+
+		TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+		if(entra==0) {
+		  GPIO_SetBits(GPIOC, GPIO_Pin_13);
+		  entra = 1;
+		} else {
+		  GPIO_ResetBits(GPIOC, GPIO_Pin_13);
+			  entra = 0;
+		}
+
+	}
+}
+
 void inicia_Timer4(void) {
+	 NVIC_InitTypeDef nvicStructure;
+	 nvicStructure.NVIC_IRQChannel = TIM4_IRQn;
+	 nvicStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	 nvicStructure.NVIC_IRQChannelSubPriority = 0;
+	 nvicStructure.NVIC_IRQChannelCmd = ENABLE;
+	 NVIC_Init(&nvicStructure);
 	TIM_TimeBaseInitTypeDef TIM_BaseStruct;
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE); //Activamos el clock para el timer4
 	TIM_BaseStruct.TIM_Prescaler = 10499; //Reducimos la frecuencia aprox 16Mhz
@@ -583,11 +609,11 @@ void inicializaLedPWM(void) {
 	GPIO_InitTypeDef GPIO_InitStruct;
 
 	//Ponemos clock para GPIOD
-	    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
+	    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
 
 	    //Asoc con Timer4
-	    GPIO_PinAFConfig(GPIOD, GPIO_PinSource12, GPIO_AF_TIM4);
-	    GPIO_PinAFConfig(GPIOD, GPIO_PinSource13, GPIO_AF_TIM4);
+	    GPIO_PinAFConfig(GPIOC, GPIO_PinSource12, GPIO_AF_TIM4);
+	    GPIO_PinAFConfig(GPIOC, GPIO_PinSource13, GPIO_AF_TIM4);
 
 	    //Utilizamos estos dos pins. Solo Pin 13 es el que saca 54 por ciento de duty
 	    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13;
@@ -595,7 +621,7 @@ void inicializaLedPWM(void) {
 	    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
 	    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
-	    GPIO_Init(GPIOD, &GPIO_InitStruct);
+	    GPIO_Init(GPIOC, &GPIO_InitStruct);
 }
 
 void init_clock(void) {
@@ -631,6 +657,15 @@ void init_button(void){
 	GPIO_Init(GPIOA, &gpio);
 }
 
+void configuraGPIOC13(){
+	GPIO_InitTypeDef gpio;
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
+	GPIO_StructInit(&gpio);
+	gpio.GPIO_Pin = GPIO_Pin_13;
+	gpio.GPIO_Mode = GPIO_Mode_OUT;
+	GPIO_Init(GPIOC, &gpio);
+}
+
 void gpioConfigADC(){
 	GPIO_InitTypeDef      GPIO_InitStructure;
 	GPIO_InitTypeDef      GPIO_InitStructure2;
@@ -659,27 +694,120 @@ void gpioConfigADC(){
 
 }
 
-void inicialitza_sistema(void){
-	init_clock();
-	init_button();
-	inicia_Timer4();
-	configuraDutyPWM();
-	inicializaLedPWM();
-	inicializaTimer6();
-	configuraTimer2(1);
-	configuraTimer5();
-	inicia_Timer3();
-	configuraGPIOG13();
-	ConfiguraPD1();
-	init_switch();
-	configuraGPIOE();
-	//configGpioAdc();
+void SetPixel (uint16_t col, uint16_t row, uint8_t alpha, uint8_t Rval,
+uint8_t Gval, uint8_t Bval ){
 
-	configuracionDMAyADC();
-	//entra = ADC_GetConversionValue(ADC3);
+	uint32_t color = (((alpha <<24) & 0xFF000000) | (((Rval) <<16) & 0x00FF0000 ) | (((Gval) << 8) & 0x0000FF00 ) | (Bval& 0x000000FF));
+
+
+	*(__IO uint32_t*)(SDRAM_BANK_ADDR  + 4*(col * 240 + row) + BUFFER_OFFSET) =  color;
+
 
 
 }
+
+
+void DibuixaLiniaHoritzontal (uint16_t col_inici, uint16_t col_fi, uint16_t
+		row, uint8_t alpha, uint8_t Rval, uint8_t Gval, uint8_t Bval) {
+	uint16_t col = 0;
+	for (col = col_inici; col < col_fi; col++){
+		SetPixel(col,row, 255, 0, 0, 0);
+	}
+
+}
+
+void DibuixaLiniaVertical (uint16_t col, uint16_t row_inici, uint16_t row_fi,
+		uint8_t alpha, uint8_t Rval, uint8_t Gval, uint8_t Bval ) {
+	uint16_t row = 0;
+
+	for (row = row_inici; row < row_fi; row++){
+		SetPixel(col,row, 255, 0, 0, 0);
+	}
+
+}
+
+
+void dibujaCuadrado(row_i, col_i, row_f, col_f, Rval, Gval, Bval) {
+	uint16_t row, col = 0;
+	for (row = row_i; row < row_f; row++){
+		for (col = col_i ; col < col_f; col++){
+			SetPixel(col,row, 255, Rval, Gval, Bval);
+		}
+	}
+}
+void EsborraPantalla (uint8_t Rval, uint8_t Gval, uint8_t Bval ) {
+	uint32_t row, col = 0;
+	for (row = 0; row < 240; row++){
+		for (col = 0; col < 320; col++){
+				SetPixel(col,row, 255, Rval, Gval, Bval);
+		}
+	}
+}
+
+
+
+void iniciaLCD() {
+	LCD_Init();
+
+	LCD_LayerInit();
+	LCD_DisplayOn();
+	LTDC_Cmd(ENABLE);
+	SDRAM_Init();
+	SDRAM_GPIOConfig();
+
+	LCD_SetLayer(LCD_FOREGROUND_LAYER);
+	//limpia();
+	LCD_Clear(LCD_COLOR_WHITE);
+
+	//LTDC_Layer1->CR |= LTDC_LxCR_LEN;
+	//FMC_SDRAMWriteProtectionConfig(0x00000001, DISABLE);
+
+
+}
+
+void inicialitza_sistema(void){
+	init_clock();
+	//init_button();
+	//inicia_Timer4();
+	//configuraDutyPWM();
+	//inicializaLedPWM();
+	inicializaTimer6();
+	//configuraTimer2(1);
+	configuraTimer5();
+	inicia_Timer3();
+	//configuraGPIOG13();
+	configuraGPIOC13();
+	ConfiguraPD4();
+	//init_switch();
+	//configuraGPIOE();
+	//configGpioAdc();
+	//GPIO_SetBits(GPIOC, GPIO_Pin_13);
+
+	//entra = ADC_GetConversionValue(ADC3);
+	iniciaLCD();
+		//initMuestras();
+
+	EsborraPantalla(255,255,255);
+
+	DibuixaLiniaHoritzontal (20, 300, 20, 255, 0, 0, 0);
+	DibuixaLiniaHoritzontal (20, 300, 220, 255, 0, 0, 0);
+	DibuixaLiniaVertical (20, 20, 220, 255, 0, 0, 0);
+	DibuixaLiniaVertical (300, 20, 220, 255, 0, 0, 0);
+	DibuixaLiniaVertical (160, 20, 220, 255, 0, 0, 0);
+	DibuixaLiniaHoritzontal (20, 300, 120, 255, 0, 0, 0);
+
+	dibujaCuadrado(223, 270-40, 237, 270, 255,0,0);
+	dibujaCuadrado(223, 210-40, 237, 210, 0,255,0);
+	dibujaCuadrado(223, 150-40, 237, 150, 255,0,255);
+	dibujaCuadrado(223, 90-40, 237, 90, 0,255,255);
+
+	//configuracionDMAyADC();
+
+
+}
+
+
+
 
 void espera_interrupcio(void){
 	while(!interrupcio){
@@ -697,7 +825,8 @@ void espera_interrupcio(void){
 int main(void) {
 	inicialitza_sistema();
     while(1) {
-    	calcula_temps_injeccio();
-    	espera_interrupcio();
+    	//calcula_temps_injeccio();
+    	//espera_interrupcio();
     }
 }
+
