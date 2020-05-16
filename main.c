@@ -805,7 +805,7 @@ void iniciaLCD() {
 	SDRAM_Init();
 	SDRAM_GPIOConfig();
 
-	LCD_SetLayer(LCD_FOREGROUND_LAYER);
+	//LCD_SetLayer(LCD_FOREGROUND_LAYER);
 	//limpia();
 	LCD_Clear(LCD_COLOR_WHITE);
 
